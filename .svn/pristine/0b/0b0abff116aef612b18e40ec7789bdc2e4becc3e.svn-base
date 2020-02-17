@@ -1,0 +1,326 @@
+/*
+ * TCSS 305 - Tetris
+ * Part-A
+ */
+package view;
+
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Observable;
+import java.util.Observer;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.Timer;
+import model.Board;
+import sun.audio.*;
+
+
+/**
+ * This is the GUI class that will display the Tetris game.
+ * 
+ * @author Yunhan Tu
+ * @version 11/28
+ */
+public class TetrisGUI extends JFrame implements Observer {
+    
+    /** 
+     * The number 1. 
+     */
+    public static final int ONE = 1;
+    /** 
+     * The number 2. 
+     */
+    public static final int TWO = 2;
+    /** 
+     * The number 3. 
+     */
+    public static final int THREE = 3;
+    /** 
+     * The number 4. 
+     */
+    public static final int FOUR = 4;
+
+    /** 
+     * The number 10. 
+     */
+    public static final int TEN = 10;
+
+    
+    /** 
+     * the delay of the timer. 
+     */
+    public static final int STARTING_DELAY = 1100;
+    
+    /** 
+     * the timer's initial delay. 
+     */
+    public static final int INITIAL_DELAY = 100;
+
+    
+    /** A generated serial UID. */
+    private static final long serialVersionUID = 1L;
+    
+    /**
+     * string for fire Property Change.
+     */
+    private static final String NEWGAME = "NewGame";
+    
+    
+    /** 
+     * the timer's delay. 
+     */
+    private final int myMoveDelay;
+    
+    /** 
+     *  the Board. 
+     */
+    private Board myBoard = new Board();
+    
+    /** 
+     * boolean whether the game is over.
+     */
+    private boolean myGameOver;
+    
+    /** 
+     *  the panel where the Tetris game playing. 
+     */
+    private final GamingPanel myPanel = new GamingPanel();
+    
+    /**
+     *  the panel that display the next block.
+     */
+    private final NextPiece myNextPiecePanel;
+    
+    /** 
+     *  the Timer. 
+     */
+    private final Timer myTimer;
+    
+    /** 
+     *  lines cleared. 
+     */
+    private int myLinesCleared;
+
+    
+    /**
+     * A Boolean for pause.
+     */
+    private boolean myPause;
+    
+    /**
+     * A Boolean for pause.
+     */
+  
+
+    
+    
+    /**
+     * This is the default constructor for the TetrisGUI.
+     */
+    public TetrisGUI() {
+        super("Tetris Game");
+        myGameOver = true;
+        myMoveDelay = STARTING_DELAY;
+        myTimer = new Timer(myMoveDelay, new TimerListener());
+        myNextPiecePanel = new NextPiece();
+  
+        
+    }
+    /**
+     * the music add method.
+     */
+    public void music() {
+        final AudioPlayer player = AudioPlayer.player;
+
+        ContinuousAudioDataStream loop = null;
+        try {
+            @SuppressWarnings("resource")
+            final AudioStream music = 
+                        new AudioStream(new FileInputStream(new File("music.wav")));
+            final AudioData data = music.getData();
+            loop = new ContinuousAudioDataStream(data);
+        } catch (final IOException error) {
+            JOptionPane.showMessageDialog(null, "Invalid file!");
+        }
+        player.start(loop);
+    }
+
+    /**
+     * The start method of the GUI class.
+     */
+    public void start() {       
+        add(myPanel , BorderLayout.CENTER);
+        add(myNextPiecePanel, BorderLayout.EAST);
+        myBoard.addObserver(this);
+        myBoard.addObserver(myPanel);
+        myBoard.addObserver(myNextPiecePanel);
+        myBoard.newGame();
+        
+        addKeyListener(new BasicControl());
+        addKeyListener(new MoreControler());
+        addPropertyChangeListener(myPanel);
+        addPropertyChangeListener(myNextPiecePanel);
+        setMinimumSize(this.getSize());
+        setResizable(true);
+        pack();
+        setVisible(true);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+    
+    /**
+     * for new game set up.
+     */
+    public void startNewGame() {
+        myBoard.newGame();
+        myTimer.setDelay(STARTING_DELAY);
+        myTimer.start();
+        myPause = false;
+        firePropertyChange(NEWGAME, false, true);
+        pack();
+    }
+
+    @Override
+    public void update(final Observable theObservable, final Object theObject) {
+        myBoard = (Board) theObservable;
+        
+        if (theObject instanceof Boolean) {
+            myGameOver = (Boolean) theObject;
+        }
+        if (theObject instanceof Integer[]) {
+            final Integer[] intList = (Integer[]) theObject;
+            for (int i = 0; i < intList.length; i++) {      
+                myLinesCleared++;
+                for (int j = ONE; j <= TEN; j++) {
+                    if (myLinesCleared / FOUR == j) { 
+                        myTimer.setDelay(myMoveDelay - j * INITIAL_DELAY);
+                    }
+                }
+            }
+        }
+        repaint();
+
+    }
+    
+    /**
+     * This method sets pause to either true or false.
+     */
+    public void setPause() {
+        if (myPause) {
+            myTimer.restart();
+            myPause = false;
+        } else {
+            myPause = true;
+            myTimer.stop();
+        }
+    }
+    
+    
+    /**
+     * This is the controler..
+     * @author Yunhan Tu
+     * @version 2017/11/28
+     *
+     */
+    public class BasicControl implements KeyListener {
+        @Override
+        public void keyPressed(final KeyEvent theEvent) {
+            if (myTimer.isRunning() && !myGameOver) {
+                
+                if (theEvent.getKeyCode() == KeyEvent.VK_A
+                                || theEvent.getKeyCode() == KeyEvent.VK_LEFT) {
+                    myBoard.left();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_F
+                                || theEvent.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    myBoard.right();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_W
+                                || theEvent.getKeyCode() == KeyEvent.VK_UP) {
+                    myBoard.rotateCCW();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_S
+                              || theEvent.getKeyCode() == KeyEvent.VK_DOWN) {
+                    myBoard.step();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_SPACE) {
+                    myBoard.drop();
+                }
+            }
+        }
+                      
+
+        @Override
+        public void keyReleased(final KeyEvent theEvent) {
+            
+        }
+
+        @Override
+        public void keyTyped(final KeyEvent theEvent) {
+            
+        }
+        
+        
+    }
+    
+    /**
+     * This is the commend that will either pause the game. 
+     * or start a new game or end the game or set up music. 
+     * @author Yunhan Tu
+     * @version 2017/12/8
+     */
+    public class MoreControler implements KeyListener {
+
+        @Override
+        public void keyPressed(final KeyEvent theEvent) {
+            if (theEvent.getKeyCode() == KeyEvent.VK_P) {
+                setPause();
+            } else if (theEvent.getKeyCode() == KeyEvent.VK_N) {
+                if (myGameOver) {
+                    myGameOver = false;
+                    startNewGame();
+                }
+            } else if (theEvent.getKeyCode() == KeyEvent.VK_E) {
+                myGameOver = true;
+            } else if (theEvent.getKeyCode() == KeyEvent.VK_M) {
+                music();
+            }
+           
+        }
+
+        @Override
+        public void keyReleased(final KeyEvent theEvent) {
+        }
+
+        @Override
+        public void keyTyped(final KeyEvent theEvent) {    
+        }
+        
+    }
+    
+    
+    
+    /**
+     * This is the timer listener.
+     * 
+     * @author Yunhan Tu
+     * @version 2017/12/8
+     *
+     */
+    private class TimerListener implements ActionListener {
+        
+        @Override
+        public void actionPerformed(final ActionEvent theEvent) {
+            myBoard.step();
+            if (myGameOver) {
+                myTimer.stop();
+                JOptionPane.showMessageDialog(null, "Game is Over!!! "
+                                + "\n Press n to start a new game!\n", 
+                                              "Tetris", JOptionPane.PLAIN_MESSAGE);
+            }
+        }
+    }  
+    
+
+}

@@ -1,0 +1,167 @@
+/*
+ * TCSS 305 - Tetris
+ * Part-A
+ */
+package view;
+
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.util.Observable;
+import java.util.Observer;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.Timer;
+import model.Board;
+/**
+ * This is the GUI class that will display the Tetris game.
+ * 
+ * @author Yunhan Tu
+ * @version 11/28
+ */
+public class TetrisGUI extends JFrame implements Observer {   
+    /** 
+     * the delay of the timer. 
+     */
+    public static final int STARTING_DELAY = 1000;
+    
+    /** 
+     * the timer's delay. 
+     */
+    public static final int INITIAL_DELAY = 100;
+    
+    /**
+     *  the serial UID. 
+     */
+    private static final long serialVersionUID = 1L;
+    
+    /** 
+     *the Board. 
+     */
+    private Board myBoard = new Board();
+    
+    /** Initializes a boolean whether the game is over. */
+    private boolean myGameOver;
+    
+    /** Initializes the panel where the Tetris game playing. */
+    private final GamingPanel myPanel = new GamingPanel();
+    
+    /** Initializes the panel that display the next block. */
+    private final NextPiece myNextPiecePanel = new NextPiece();
+    
+    /** Initializes the Timer. */
+    private final Timer myTimer;
+    
+    
+    
+    /**
+     * This is the default constructor for the TetrisGUI.
+     */
+    public TetrisGUI() {
+        super("Tetris Game");
+        myGameOver = false;
+        final int move = STARTING_DELAY;
+        myTimer = new Timer(move, new TimerListener());
+        myTimer.setInitialDelay(INITIAL_DELAY);
+    }
+
+    /**
+     * The start method of the GUI class.
+     */
+    public void start() {       
+        addKeyListener(new BasicControl());
+        addPropertyChangeListener(myPanel);
+        addPropertyChangeListener(myNextPiecePanel);
+        add(myPanel , BorderLayout.CENTER);
+        add(myNextPiecePanel, BorderLayout.EAST);
+        myBoard.addObserver(this);
+        myBoard.addObserver(myPanel);
+        myBoard.addObserver(myNextPiecePanel);
+        myBoard.newGame();
+        myTimer.setInitialDelay(INITIAL_DELAY);
+        myTimer.setDelay(STARTING_DELAY);
+        myTimer.start();
+        setMinimumSize(this.getSize());
+        setResizable(true);
+        pack();       
+        setVisible(true);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);   
+     
+        
+    }
+    
+    
+    @Override
+    public void update(final Observable theObservable, final Object theObject) {
+        myBoard = (Board) theObservable;        
+        if (theObject instanceof Boolean) {
+            myGameOver = (Boolean) theObject;
+        }
+    }
+    
+
+    /**
+     * This is the controler.
+     * 
+     * @author Yunhan Tu
+     * @version 2017/11/28
+     *
+     */
+    public class BasicControl implements KeyListener {
+        @Override
+        public void keyPressed(final KeyEvent theEvent) {
+            if (myTimer.isRunning() && !myGameOver) {
+                
+                if (theEvent.getKeyCode() == KeyEvent.VK_A
+                                || theEvent.getKeyCode() == KeyEvent.VK_LEFT) {
+                    myBoard.left();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_F
+                                || theEvent.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    myBoard.right();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_W
+                                || theEvent.getKeyCode() == KeyEvent.VK_UP) {
+                    myBoard.rotateCCW();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_S
+                              || theEvent.getKeyCode() == KeyEvent.VK_DOWN) {
+                    myBoard.step();
+                } else if (theEvent.getKeyCode() == KeyEvent.VK_SPACE) {
+                    myBoard.drop();
+                }
+            }
+        }
+        
+        @Override
+        public void keyReleased(final KeyEvent theEvent) {
+            
+        }
+
+        @Override
+        public void keyTyped(final KeyEvent theEvent) {
+            
+        }
+        
+        
+    }
+    
+    /**
+     * This is the timer listener.
+     * 
+     * @author Yunhan Tu
+     * @version 11/28
+     *
+     */
+    private class TimerListener implements ActionListener {
+        
+        @Override
+        public void actionPerformed(final ActionEvent theEvent) {
+            myBoard.step();
+            if (myGameOver) {
+                myTimer.stop();
+                JOptionPane.showMessageDialog(null, "Game is Over!!!", 
+                                         "Tetris", JOptionPane.PLAIN_MESSAGE);                 
+            }
+        }
+    }  
+}

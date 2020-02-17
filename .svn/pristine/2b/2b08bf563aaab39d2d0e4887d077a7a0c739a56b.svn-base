@@ -1,0 +1,112 @@
+/*
+ * TCSS 305 - Tetris
+ * Part-A
+ */
+package view;
+
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.geom.Rectangle2D;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import javax.swing.JPanel;
+import model.Block;
+import model.Board;
+
+/**
+ * This class is use to show the Tetris game.
+ * 
+ * @author Yunhan Tu
+ * @version 2017/12/1
+ *
+ */
+public class GamingPanel extends JPanel implements Observer, PropertyChangeListener {
+    
+    /**
+     *  A serial UID. 
+     */
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * the block size.
+     */
+    private static final int SIZE = 20;
+    
+    /** 
+     *  blocks. 
+     */
+    private final List<Block[]> myBlockList = new ArrayList<Block[]>();
+
+    /** 
+     * The boar. 
+     */
+    private Board myBoard;
+       
+    /**
+     * the constructol.
+     */
+    public GamingPanel() {
+        super();
+        myBoard = new Board();
+        setPreferredSize(new Dimension(myBoard.getWidth() * SIZE + SIZE, 
+                                       myBoard.getHeight() * SIZE + SIZE));
+        setBackground(Color.WHITE);      
+    }
+    
+    @Override
+    public void paintComponent(final Graphics theGraphics) {
+        super.paintComponent(theGraphics);
+        final Graphics2D g2D = (Graphics2D) theGraphics;
+        final double width = myBoard.getWidth() * SIZE;
+        final double height = myBoard.getHeight() * SIZE;
+        final Rectangle2D gameBorder = new Rectangle2D.Double(0.0, 0.0, width, height);
+        g2D.draw(gameBorder); 
+        
+        for (int boardHeight = 0; boardHeight < myBlockList.size(); boardHeight++) { //columns
+            
+            final Block[] temp1 = myBlockList.get(boardHeight);
+            final int howRounded = 5;
+            for (int i = 0; i < temp1.length; i++) {
+                if (temp1[i] != null) {
+                    final Rectangle2D drawblocks =
+                                    new Rectangle2D.Double(SIZE * i,
+                                                           (SIZE - boardHeight) * SIZE - SIZE,
+                                                           SIZE, SIZE);
+                    g2D.setPaint(Color.BLACK); 
+                    g2D.fill(drawblocks);
+                    g2D.setPaint(Color.BLACK); 
+                    g2D.draw(drawblocks);
+                    g2D.drawRoundRect(SIZE * i, (SIZE - boardHeight) * SIZE - SIZE, SIZE, SIZE,
+                                      howRounded, howRounded);
+                    
+                }
+            }
+            repaint();
+        }
+        
+    } 
+
+    @Override
+    public void update(final Observable theObservable, final Object theObject) {
+        myBoard = (Board) theObservable;
+        if (theObject instanceof List) {
+            myBlockList.clear();
+            myBlockList.addAll((List<Block[]>) theObject);
+        }          
+    } 
+
+    
+    
+    @Override
+    public void propertyChange(final PropertyChangeEvent theEvent) {
+
+    }
+    
+    
+}
